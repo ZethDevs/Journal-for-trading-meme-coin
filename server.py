@@ -459,7 +459,7 @@ AI_PROVIDERS = {
     "gpt4":    {"name":"GPT-4o",            "url":"https://api.openai.com/v1/chat/completions",         "model":"gpt-4o",                     "auth_header":"Authorization","auth_prefix":"Bearer ","json_mode":True},
     "claude":  {"name":"Claude 3.5 Sonnet", "url":"https://api.anthropic.com/v1/messages",              "model":"claude-3-5-sonnet-20241022",  "extra_headers":{"anthropic-version":"2023-06-01"}},
     "gemini":  {"name":"Gemini 1.5 Pro",    "url":"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent","model":"gemini-1.5-pro","auth_type":"query"},
-    "deepseek":{"name":"DeepSeek R1",       "url":"https://api.deepseek.com/v1/chat/completions",       "model":"deepseek-reasoner",           "auth_header":"Authorization","auth_prefix":"Bearer ","json_mode":True},
+    "deepseek":{"name":"DeepSeek R1",       "url":"https://api.deepseek.com/v1/chat/completions",       "model":"deepseek-chat",           "auth_header":"Authorization","auth_prefix":"Bearer ","json_mode":True},
     "grok":    {"name":"Grok-2",            "url":"https://api.x.ai/v1/chat/completions",               "model":"grok-2-latest",               "auth_header":"Authorization","auth_prefix":"Bearer "},
     "mistral": {"name":"Mistral Large",     "url":"https://api.mistral.ai/v1/chat/completions",         "model":"mistral-large-latest",        "auth_header":"Authorization","auth_prefix":"Bearer "},
 }

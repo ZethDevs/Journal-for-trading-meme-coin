@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XAUUSD Signal Pro v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:#D4A843; --gold-l:#F2CE68; --gold-d:#9A7420;
+  --bg:#09090B; --bg2:#101014; --bg3:#17171C; --bg4:#1E1E25;
+  --border:rgba(212,168,67,.18); --border2:rgba(255,255,255,.06);
+  --text:#EAEAE2; --muted:#666670; --muted2:#8B8B95;
+  --green:#22C55E; --red:#EF4444; --buy:#10D9A0; --sell:#FF4560;
+}
+*{margin:0;padding:0;box-sizing:border-box} html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:
+  radial-gradient(ellipse 700px 500px at 85% 5%,rgba(212,168,67,.05) 0%,transparent 60%),
+  radial-gradient(ellipse 400px 300px at 5% 80%,rgba(212,168,67,.03) 0%,transparent 60%);
+  pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(212,168,67,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(212,168,67,.025) 1px,transparent 1px);background-size:64px 64px;pointer-events:none;z-index:0}
+
+/* ── Header ─────────────────────────────────────────── */
+header{position:sticky;top:0;z-index:100;padding:0 36px;height:60px;display:flex;align-items:center;justify-content:space-between;background:rgba(9,9,11,.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{font-size:32px;color:var(--gold);animation:glow 3s ease-in-out infinite}
+@keyframes glow{0%,100%{filter:drop-shadow(0 0 0 rgba(212,168,67,0))}50%{filter:drop-shadow(0 0 10px rgba(212,168,67,.5))}}
+.logo-name{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--gold-l)}
+.logo-sub{font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase}
+.hdr-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.live-pill{display:flex;align-items:center;gap:5px;padding:4px 12px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);border-radius:100px;font-size:10px;color:var(--green);font-family:'Space Mono',monospace}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 1.3s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.1}}
+.price-display{display:flex;align-items:center;gap:8px}
+.price-num{font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--gold);transition:color .3s}
+.price-num.up{color:var(--buy)} .price-num.down{color:var(--sell)}
+.price-chg{font-family:'Space Mono',monospace;font-size:10px;padding:3px 8px;border-radius:5px;transition:all .3s}
+.price-chg.up{background:rgba(16,217,160,.1);color:var(--buy);border:1px solid rgba(16,217,160,.25)}
+.price-chg.down{background:rgba(255,69,96,.1);color:var(--sell);border:1px solid rgba(255,69,96,.25)}
+
+/* ── Main ───────────────────────────────────────────── */
+main{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:40px 20px 80px}
+.hero{text-align:center;margin-bottom:44px}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(48px,9vw,100px);letter-spacing:3px;line-height:.92;background:linear-gradient(150deg,var(--gold-l) 0%,var(--gold) 55%,var(--gold-d) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{color:var(--muted2);font-size:12px;letter-spacing:4px;text-transform:uppercase;margin-top:12px}
+.hero-badges{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:5px 14px;border-radius:100px;font-size:11px;letter-spacing:.5px}
+.badge-gold{background:rgba(212,168,67,.07);border:1px solid rgba(212,168,67,.2);color:var(--gold)}
+.badge-green{background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2);color:var(--green)}
+
+/* ── Server status ──────────────────────────────────── */
+.srv-status{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:30px;font-size:11px;font-family:'Space Mono',monospace}
+.sd{width:7px;height:7px;border-radius:50%;background:var(--muted);transition:all .3s;flex-shrink:0}
+.sd.ok{background:var(--green);box-shadow:0 0 6px rgba(34,197,94,.4)}
+.sd.err{background:var(--red);box-shadow:0 0 6px rgba(239,68,68,.3)}
+.st{color:var(--muted)}
+
+/* ── Steps ──────────────────────────────────────────── */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-bottom:30px}
+.step{display:flex;align-items:center;gap:9px;padding:12px 16px;background:var(--bg2);border:1px solid var(--border2);font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;transition:all .3s}
+.step:first-child{border-radius:10px 0 0 10px} .step:last-child{border-radius:0 10px 10px 0}
+.step.active{background:rgba(212,168,67,.07);border-color:var(--gold);color:var(--gold)}
+.step.done{background:rgba(34,197,94,.05);border-color:rgba(34,197,94,.25);color:var(--green)}
+.sn{width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:9px;flex-shrink:0;transition:all .3s}
+.step.active .sn{background:var(--gold);color:#000} .step.done .sn{background:var(--green);color:#000}
+
+/* ── Card ───────────────────────────────────────────── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:28px;margin-bottom:18px;position:relative;overflow:hidden;transition:border-color .3s}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,67,.25),transparent);opacity:0;transition:opacity .3s}
+.card:hover::before{opacity:1}
+.ct{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:2px;color:var(--gold-l);margin-bottom:3px}
+.cs{font-size:11.5px;color:var(--muted);margin-bottom:20px;line-height:1.6}
+
+/* ── TA Dashboard ───────────────────────────────────── */
+#taCard{display:none}
+#taCard.show{display:block;animation:slideUp .4s ease}
+.ta-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.ta-src{font-size:10px;font-family:'Space Mono',monospace;color:var(--muted);letter-spacing:1px;padding:4px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px}
+.ind-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:18px}
+.ind-cell{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:3px;transition:border-color .2s}
+.ind-cell.bull{border-color:rgba(16,217,160,.3);background:rgba(16,217,160,.04)}
+.ind-cell.bear{border-color:rgba(255,69,96,.3);background:rgba(255,69,96,.04)}
+.ind-cell.neutral{border-color:rgba(212,168,67,.25);background:rgba(212,168,67,.03)}
+.ic-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-family:'Space Mono',monospace}
+.ic-val{font-family:'Space Mono',monospace;font-size:14px;font-weight:700;transition:color .3s}
+.ind-cell.bull .ic-val{color:var(--buy)} .ind-cell.bear .ic-val{color:var(--sell)} .ind-cell.neutral .ic-val{color:var(--gold)}
+.ic-note{font-size:10px;color:var(--muted)}
+
+.sr-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;margin-bottom:16px}
+.sr-cell{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;text-align:center}
+.sr-lbl{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;font-family:'Space Mono',monospace}
+.sr-val{font-family:'Space Mono',monospace;font-size:12px;font-weight:700}
+.sr-r1,.sr-r2{color:var(--sell)} .sr-s1,.sr-s2{color:var(--buy)}
+.sr-pivot{color:var(--gold)} .sr-price{color:var(--gold-l)}
+
+.sig-score-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.sig-score-box{flex:1;min-width:120px;background:var(--bg3);border-radius:10px;padding:14px;text-align:center;border:1px solid}
+.sig-score-box.bull{border-color:rgba(16,217,160,.3)} .sig-score-box.bear{border-color:rgba(255,69,96,.3)}
+.ssb-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;font-family:'Space Mono',monospace}
+.ssb-lbl.bull{color:var(--buy)} .ssb-lbl.bear{color:var(--sell)}
+.ssb-val{font-family:'Space Mono',monospace;font-size:28px;font-weight:700}
+.ssb-val.bull{color:var(--buy)} .ssb-val.bear{color:var(--sell)}
+.ssb-bar{height:4px;border-radius:100px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:8px}
+.ssb-fill{height:100%;border-radius:100px;transition:width .8s ease}
+.ssb-fill.bull{background:var(--buy)} .ssb-fill.bear{background:var(--sell)}
+
+.bias-badge{display:flex;align-items:center;justify-content:center;gap:12px;padding:14px;background:var(--bg3);border-radius:10px;border:1px solid var(--border2);margin-bottom:16px;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;font-size:22px}
+.bias-badge.bull{border-color:rgba(16,217,160,.3);color:var(--buy)}
+.bias-badge.bear{border-color:rgba(255,69,96,.3);color:var(--sell)}
+
+/* ── AI Grid ────────────────────────────────────────── */
+.ai-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ai-card{background:var(--bg3);border:2px solid var(--border2);border-radius:13px;padding:17px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;user-select:none}
+.ai-card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(212,168,67,.07),transparent);opacity:0;transition:opacity .25s}
+.ai-card:hover{border-color:rgba(212,168,67,.4);transform:translateY(-2px);box-shadow:0 10px 28px rgba(0,0,0,.4)}
+.ai-card:hover::after,.ai-card.sel::after{opacity:1}
+.ai-card.sel{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold-d),0 10px 28px rgba(212,168,67,.15)}
+.ai-bdg{position:absolute;top:8px;right:8px;font-size:8px;font-family:'Space Mono',monospace;letter-spacing:.5px;padding:2px 7px;border-radius:100px;text-transform:uppercase}
+.b-r{background:rgba(212,168,67,.12);color:var(--gold);border:1px solid rgba(212,168,67,.3)}
+.b-p{background:rgba(139,92,246,.1);color:#a78bfa;border:1px solid rgba(139,92,246,.25)}
+.b-f{background:rgba(16,217,160,.08);color:var(--buy);border:1px solid rgba(16,217,160,.25)}
+.ai-ic{font-size:26px;margin-bottom:9px;display:block}
+.ai-nm{font-weight:600;font-size:13px;margin-bottom:3px}
+.ai-ds{font-size:11px;color:var(--muted);line-height:1.5}
+.ai-ck{position:absolute;bottom:9px;right:9px;width:16px;height:16px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;color:#000;opacity:0;transform:scale(.3);transition:all .25s}
+.ai-card.sel .ai-ck{opacity:1;transform:scale(1)}
+
+/* ── API Form ───────────────────────────────────────── */
+#cardAPI{display:none} #cardAPI.show{display:block;animation:slideUp .35s ease}
+.api-lbl{display:inline-flex;align-items:center;gap:7px;background:rgba(212,168,67,.07);border:1px solid var(--border);border-radius:7px;padding:5px 12px;font-size:11px;color:var(--gold);margin-bottom:13px;letter-spacing:1px}
+.api-row{display:flex;gap:8px}
+.api-inp{flex:1;background:var(--bg4);border:1.5px solid var(--border2);border-radius:11px;padding:13px 16px;color:var(--text);font-family:'Space Mono',monospace;font-size:12px;outline:none;transition:border-color .2s;letter-spacing:.5px}
+.api-inp:focus{border-color:var(--gold)} .api-inp.ok{border-color:rgba(34,197,94,.5)} .api-inp.bad{border-color:rgba(239,68,68,.5)}
+.api-inp::placeholder{color:var(--muted);font-family:'DM Sans',sans-serif;letter-spacing:0;font-size:13px}
+.eye{background:var(--bg4);border:1.5px solid var(--border2);border-radius:9px;width:44px;cursor:pointer;color:var(--muted);font-size:15px;transition:all .2s;flex-shrink:0}
+.eye:hover{border-color:var(--gold);color:var(--gold)}
+.api-hint{margin-top:8px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.api-hint a{color:var(--gold);text-decoration:none} .api-hint a:hover{text-decoration:underline}
+.vmsg{margin-top:7px;font-size:10.5px;height:15px;transition:color .3s;font-family:'Space Mono',monospace}
+.vok{color:var(--green)} .vbad{color:var(--red)}
+
+/* ── Settings ───────────────────────────────────────── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.sg label{display:block;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.sg select{width:100%;background:var(--bg4);border:1.5px solid var(--border2);border-radius:9px;padding:11px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;cursor:pointer;transition:border-color .2s;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666670' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center}
+.sg select:focus{border-color:var(--gold)}
+.tf-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.tf{padding:7px 14px;background:var(--bg4);border:1.5px solid var(--border2);border-radius:7px;color:var(--muted);font-size:11px;font-family:'Space Mono',monospace;cursor:pointer;transition:all .2s;user-select:none}
+.tf:hover{border-color:rgba(212,168,67,.4);color:var(--gold)} .tf.active{background:rgba(212,168,67,.1);border-color:var(--gold);color:var(--gold)}
+.gen-btn{width:100%;padding:17px;background:linear-gradient(135deg,var(--gold-d),var(--gold) 50%,var(--gold-l));border:none;border-radius:13px;color:#000;font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:3px;cursor:pointer;transition:all .3s;position:relative;overflow:hidden;margin-top:4px}
+.gen-btn:hover{transform:translateY(-2px);box-shadow:0 14px 42px rgba(212,168,67,.32)}
+.gen-btn:active{transform:translateY(0)}
+.gen-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent,rgba(255,255,255,.22),transparent);transform:translateX(-100%);transition:transform .5s}
+.gen-btn:hover::after{transform:translateX(100%)}
+.gen-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* ── Loading ─────────────────────────────────────────── */
+#loadCard{display:none;text-align:center;padding:48px 20px}
+#loadCard.show{display:block;animation:fadeIn .3s ease}
+.ring{width:56px;height:56px;border-radius:50%;border:2px solid rgba(212,168,67,.2);border-top-color:var(--gold);animation:spin 1s linear infinite;margin:0 auto 18px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lt{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--gold)}
+.lsub{font-size:11px;color:var(--muted);margin-top:5px}
+.lsteps{list-style:none;text-align:left;display:inline-block;margin-top:18px;min-width:260px}
+.ls{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:11px;color:var(--muted);transition:color .3s}
+.ls.go{color:var(--gold)} .ls.ok{color:var(--green)} .ls-i{width:16px;text-align:center;font-size:12px}
+
+/* ── Signal Output ───────────────────────────────────── */
+#sigOut{display:none} #sigOut.show{display:block;animation:slideUp .5s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.sig-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:22px}
+.sig-pill{display:inline-flex;align-items:center;gap:9px;padding:9px 26px;border-radius:100px;font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:3px}
+.sig-pill.buy{background:rgba(16,217,160,.09);border:2px solid var(--buy);color:var(--buy)}
+.sig-pill.sell{background:rgba(255,69,96,.09);border:2px solid var(--sell);color:var(--sell)}
+.metas{display:flex;flex-wrap:wrap;gap:6px}
+.meta{font-family:'Space Mono',monospace;font-size:9.5px;padding:3px 9px;border-radius:5px;background:var(--bg3);border:1px solid var(--border2);color:var(--muted);letter-spacing:.5px}
+
+.conf-bar{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:13px 18px;display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.cl{font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;width:80px;flex-shrink:0}
+.ct2{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:100px;overflow:hidden}
+.cf{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--gold-d),var(--gold),var(--gold-l));width:0;transition:width 1.8s cubic-bezier(.22,1,.36,1)}
+.cp{font-family:'Space Mono',monospace;font-size:13px;color:var(--gold);width:36px;text-align:right}
+
+.lvl-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:12px}
+.lvl{background:var(--bg3);border:1px solid var(--border2);border-radius:13px;padding:18px;text-align:center;position:relative;overflow:hidden}
+.lvl::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.lvl.entry::before{background:var(--gold)} .lvl.tp::before{background:var(--buy)} .lvl.sl::before{background:var(--sell)}
+.ll{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:7px;font-family:'Space Mono',monospace}
+.lv{font-family:'Space Mono',monospace;font-size:22px;font-weight:700;letter-spacing:-1px}
+.lvl.entry .lv{color:var(--gold-l)} .lvl.tp .lv{color:var(--buy)} .lvl.sl .lv{color:var(--sell)}
+.ln{font-size:9px;color:var(--muted);margin-top:4px;font-family:'Space Mono',monospace}
+
+.rr-row{background:var(--bg3);border:1px solid var(--border2);border-radius:9px;padding:11px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;font-size:11px;flex-wrap:wrap;gap:6px}
+.rr-row span{color:var(--muted)} .rr-val{font-family:'Space Mono',monospace;color:var(--gold);font-size:14px}
+
+/* ── TA section in signal output ────────────────────── */
+.ta-mini{background:var(--bg3);border:1px solid var(--border2);border-radius:13px;padding:18px;margin-bottom:14px}
+.tm-title{font-size:9.5px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.tm-title::after{content:'';flex:1;height:1px;background:rgba(212,168,67,.12)}
+.tm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px}
+.tmc{background:var(--bg4);border-radius:7px;padding:9px 11px;border:1px solid var(--border2)}
+.tmc-l{font-size:8.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;font-family:'Space Mono',monospace}
+.tmc-v{font-family:'Space Mono',monospace;font-size:12px;font-weight:700}
+.c-bull{color:var(--buy)} .c-bear{color:var(--sell)} .c-neutral{color:var(--gold)}
+
+.analysis{background:var(--bg3);border:1px solid var(--border2);border-radius:13px;padding:20px;margin-bottom:14px}
+.at{font-size:9.5px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.at::after{content:'';flex:1;height:1px;background:rgba(212,168,67,.12)}
+.asumm{font-size:13px;line-height:1.8;color:#B8B8B2;margin-bottom:12px}
+.apts{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+.apt{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:#B8B8B2;line-height:1.6}
+.adot{width:5px;height:5px;border-radius:50%;background:var(--gold);margin-top:8px;flex-shrink:0}
+.ainds{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.ind{padding:4px 10px;border-radius:7px;font-size:10.5px;font-family:'Space Mono',monospace;letter-spacing:.3px;border:1px solid}
+.ind.bull{background:rgba(16,217,160,.07);color:var(--buy);border-color:rgba(16,217,160,.22)}
+.ind.bear{background:rgba(255,69,96,.07);color:var(--sell);border-color:rgba(255,69,96,.22)}
+.ind.neutral{background:rgba(212,168,67,.07);color:var(--gold);border-color:rgba(212,168,67,.22)}
+.mctx{background:rgba(212,168,67,.04);border:1px solid rgba(212,168,67,.12);border-radius:9px;padding:12px 16px;margin-top:12px;font-size:11.5px;color:var(--muted2);line-height:1.7}
+.mctx strong{color:var(--gold-l);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;display:block;margin-bottom:5px}
+
+.act-row{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap}
+.btn-s{flex:1;min-width:70px;padding:10px 14px;background:var(--bg4);border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-size:11px;cursor:pointer;transition:all .2s;letter-spacing:.5px;text-transform:uppercase;font-family:'DM Sans',sans-serif}
+.btn-s:hover{border-color:var(--gold);color:var(--gold)}
+.btn-new{flex:2;padding:10px;background:rgba(212,168,67,.07);border:1px solid var(--gold);border-radius:8px;color:var(--gold);font-size:12px;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;cursor:pointer;transition:all .2s}
+.btn-new:hover{background:rgba(212,168,67,.14)}
+
+/* ── Toast ───────────────────────────────────────────── */
+.toast{position:fixed;bottom:20px;right:20px;max-width:340px;padding:12px 18px;border-radius:10px;font-size:12px;z-index:9999;animation:toastIn .3s ease;display:none;line-height:1.5}
+.toast.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35);color:#FCA5A5}
+.toast.ok{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.35);color:#86EFAC}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+footer{position:relative;z-index:1;text-align:center;padding:20px;font-size:10.5px;color:var(--muted);border-top:1px solid var(--border2);line-height:2;max-width:800px;margin:0 auto}
+
+@media(max-width:700px){
+  header{padding:0 14px} main{padding:24px 12px 60px}
+  .steps{grid-template-columns:1fr;gap:2px}
+  .step:first-child{border-radius:8px 8px 0 0} .step:last-child{border-radius:0 0 8px 8px}
+  .ai-grid{grid-template-columns:1fr 1fr} .g2{grid-template-columns:1fr}
+  .lvl-grid{grid-template-columns:1fr}
+  .logo-sub{display:none}
+}
+@media(max-width:440px){.ai-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⬡</div>
+    <div>
+      <div class="logo-name">XAUUSD SIGNAL PRO</div>
+      <div class="logo-sub">Python v3.0 · NumPy/Pandas TA Engine</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="live-pill"><div class="live-dot"></div>LIVE</div>
+    <div class="price-display">
+      <div class="price-num" id="priceNum">-.--</div>
+      <div class="price-chg" id="priceChg" style="display:none"></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="hero-title">GOLD SIGNAL</div>
+    <div class="hero-sub">AI + NumPy/Pandas Technical Analysis untuk XAUUSD</div>
+    <div class="hero-badges">
+      <div class="badge badge-gold">🐍 Python Backend</div>
+      <div class="badge badge-green">📊 14+ Indikator Real</div>
+      <div class="badge badge-gold">📡 Yahoo Finance Live</div>
+      <div class="badge badge-green">🤖 6 AI Providers</div>
+    </div>
+  </div>
+
+  <!-- Server Status -->
+  <div class="srv-status">
+    <div class="sd" id="sd"></div>
+    <span class="st" id="st">Memeriksa server Python...</span>
+  </div>
+
+  <!-- Steps -->
+  <div class="steps">
+    <div class="step active" id="s1"><div class="sn">1</div>Pilih AI</div>
+    <div class="step" id="s2"><div class="sn">2</div>API Key</div>
+    <div class="step" id="s3"><div class="sn">3</div>Generate</div>
+  </div>
+
+  <!-- TA Dashboard (pre-analysis) -->
+  <div class="card" id="taCard">
+    <div class="ta-header">
+      <div><div class="ct">DATA TEKNIKAL LIVE</div><div class="cs" style="margin-bottom:0">Dikalkulasi Python/NumPy/Pandas secara real-time</div></div>
+      <div class="ta-src" id="taSource">...</div>
+    </div>
+
+    <!-- Bias score -->
+    <div class="sig-score-row">
+      <div class="sig-score-box bull">
+        <div class="ssb-lbl bull">BULLISH SIGNALS</div>
+        <div class="ssb-val bull" id="bullCount">0</div>
+        <div class="ssb-bar"><div class="ssb-fill bull" id="bullBar" style="width:0%"></div></div>
+      </div>
+      <div class="sig-score-box bear">
+        <div class="ssb-lbl bear">BEARISH SIGNALS</div>
+        <div class="ssb-val bear" id="bearCount">0</div>
+        <div class="ssb-bar"><div class="ssb-fill bear" id="bearBar" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div class="bias-badge" id="biasBadge"><span id="biasArrow">▲</span><span id="biasText">LOADING...</span></div>
+
+    <!-- Indicators grid -->
+    <div class="ind-grid" id="indGrid"></div>
+
+    <!-- S/R levels -->
+    <div class="sr-row" id="srRow"></div>
+  </div>
+
+  <!-- Step 1: AI -->
+  <div class="card">
+    <div class="ct">PILIH AI MODEL</div>
+    <div class="cs">Setiap AI akan menerima data teknikal NYATA dari NumPy/Pandas untuk dianalisis.</div>
+    <div class="ai-grid">
+      <div class="ai-card" data-ai="gpt4" onclick="pickAI(this)">
+        <div class="ai-bdg b-r">Rekomendasi</div>
+        <span class="ai-ic">🧠</span><div class="ai-nm">GPT-4o</div>
+        <div class="ai-ds">OpenAI. JSON mode aktif, analisis presisi tinggi.</div>
+        <div class="ai-ck">✓</div>
+      </div>
+      <div class="ai-card" data-ai="claude" onclick="pickAI(this)">
+        <div class="ai-bdg b-p">Premium</div>
+        <span class="ai-ic">⚡</span><div class="ai-nm">Claude 3.5 Sonnet</div>
+        <div class="ai-ds">Anthropic. Reasoning kuat untuk analisis teknikal kompleks.</div>
+        <div class="ai-ck">✓</div>
+      </div>
+      <div class="ai-card" data-ai="gemini" onclick="pickAI(this)">
+        <div class="ai-bdg b-f">Fast</div>
+        <span class="ai-ic">💎</span><div class="ai-nm">Gemini 1.5 Pro</div>
+        <div class="ai-ds">Google AI. Cepat, cocok untuk scalping & multi-TF.</div>
+        <div class="ai-ck">✓</div>
+      </div>
+      <div class="ai-card" data-ai="deepseek" onclick="pickAI(this)">
+        <span class="ai-ic">🔭</span><div class="ai-nm">DeepSeek R1</div>
+        <div class="ai-ds">Reasoning model, step-by-step logical analysis.</div>
+        <div class="ai-ck">✓</div>
+      </div>
+      <div class="ai-card" data-ai="grok" onclick="pickAI(this)">
+        <span class="ai-ic">🚀</span><div class="ai-nm">Grok-2</div>
+        <div class="ai-ds">xAI. Analisis sentimen dan konteks pasar real-time.</div>
+        <div class="ai-ck">✓</div>
+      </div>
+      <div class="ai-card" data-ai="mistral" onclick="pickAI(this)">
+        <span class="ai-ic">🌀</span><div class="ai-nm">Mistral Large</div>
+        <div class="ai-ds">Open-source powerhouse. Efisien dan powerful.</div>
+        <div class="ai-ck">✓</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: API Key -->
+  <div class="card" id="cardAPI">
+    <div class="ct">INPUT API KEY</div>
+    <div class="cs">API Key dikirim langsung ke provider AI. Tidak disimpan di server kami.</div>
+    <div class="api-lbl" id="apiLbl">🧠 OpenAI API Key</div>
+    <div class="api-row">
+      <input type="password" class="api-inp" id="apiInp" placeholder="Paste API Key..." oninput="onKey()">
+      <button class="eye" onclick="toggleEye()">👁</button>
+    </div>
+    <div class="api-hint">🔗 Dapatkan di: <a href="#" id="apiLink" target="_blank">platform.openai.com</a></div>
+    <div class="vmsg" id="vMsg"></div>
+  </div>
+
+  <!-- Step 3: Settings -->
+  <div class="card">
+    <div class="ct">PENGATURAN ANALISIS</div>
+    <div class="cs">Konfigurasi parameter untuk signal yang optimal.</div>
+
+    <div class="g2">
+      <div class="sg"><label>Strategi</label>
+        <select id="strategy">
+          <option value="technical">Pure Technical Analysis</option>
+          <option value="smart_money">Smart Money Concept (SMC)</option>
+          <option value="ict">ICT Methodology</option>
+          <option value="fundamental">Fundamental + Technical</option>
+          <option value="sentiment">Sentiment Analysis</option>
+        </select>
+      </div>
+      <div class="sg"><label>Mode Trading</label>
+        <select id="mode">
+          <option value="conservative">Conservative</option>
+          <option value="moderate" selected>Moderate</option>
+          <option value="aggressive">Aggressive</option>
+        </select>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="sg"><label>Min R:R Ratio</label>
+        <select id="rrMin">
+          <option value="1.5">1 : 1.5</option>
+          <option value="2" selected>1 : 2.0</option>
+          <option value="2.5">1 : 2.5</option>
+          <option value="3">1 : 3.0</option>
+        </select>
+      </div>
+      <div class="sg"><label>Lot Size</label>
+        <select id="lot">
+          <option value="micro">Micro (0.01-0.05)</option>
+          <option value="mini" selected>Mini (0.1-0.5)</option>
+          <option value="standard">Standard (1.0+)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="sg" style="margin-bottom:16px">
+      <label>Timeframe</label>
+      <div class="tf-row">
+        <div class="tf" onclick="pickTF(this)" data-tf="M5">M5</div>
+        <div class="tf" onclick="pickTF(this)" data-tf="M15">M15</div>
+        <div class="tf" onclick="pickTF(this)" data-tf="M30">M30</div>
+        <div class="tf active" onclick="pickTF(this)" data-tf="H1">H1</div>
+        <div class="tf" onclick="pickTF(this)" data-tf="H4">H4</div>
+        <div class="tf" onclick="pickTF(this)" data-tf="D1">D1</div>
+        <div class="tf" onclick="pickTF(this)" data-tf="W1">W1</div>
+      </div>
+    </div>
+
+    <button class="gen-btn" id="genBtn" onclick="generate()">⚡ ANALYZE & GENERATE SIGNAL</button>
+  </div>
+
+  <!-- Loading -->
+  <div class="card" id="loadCard">
+    <div class="ring"></div>
+    <div class="lt">MEMPROSES...</div>
+    <div class="lsub" id="lsub">Menghubungi server Python...</div>
+    <ul class="lsteps">
+      <li class="ls" id="l1"><span class="ls-i">⏳</span> Mengambil data OHLCV XAUUSD...</li>
+      <li class="ls" id="l2"><span class="ls-i">⏳</span> Menghitung RSI, MACD, Bollinger...</li>
+      <li class="ls" id="l3"><span class="ls-i">⏳</span> ADX, Stochastic, CCI, Williams%R...</li>
+      <li class="ls" id="l4"><span class="ls-i">⏳</span> Scoring sinyal teknikal (bull vs bear)...</li>
+      <li class="ls" id="l5"><span class="ls-i">⏳</span> Mengirim data ke AI untuk signal final...</li>
+    </ul>
+  </div>
+
+  <!-- Signal Output -->
+  <div id="sigOut">
+    <div class="card">
+      <div class="sig-hdr">
+        <div class="sig-pill" id="sigPill"><span id="sigArr">▲</span><span id="sigType">BUY</span></div>
+        <div class="metas">
+          <div class="meta" id="mAI">-</div>
+          <div class="meta" id="mTF">H1</div>
+          <div class="meta" id="mMode">-</div>
+          <div class="meta" id="mTime">--:--</div>
+          <div class="meta" id="mCandles">- bars</div>
+        </div>
+      </div>
+
+      <div class="conf-bar">
+        <div class="cl">Confidence</div>
+        <div class="ct2"><div class="cf" id="cFill"></div></div>
+        <div class="cp" id="cPct">0%</div>
+      </div>
+
+      <div class="lvl-grid">
+        <div class="lvl entry"><div class="ll">Entry Zone</div><div class="lv" id="vE">-</div><div class="ln" id="nE">Market Price</div></div>
+        <div class="lvl tp"><div class="ll">Take Profit</div><div class="lv" id="vTP">-</div><div class="ln" id="nTP">+0 pips</div></div>
+        <div class="lvl sl"><div class="ll">Stop Loss</div><div class="lv" id="vSL">-</div><div class="ln" id="nSL">-0 pips</div></div>
+      </div>
+
+      <div class="rr-row">
+        <span>Risk : Reward</span>
+        <div class="rr-val" id="vRR">1:0</div>
+        <span>Lot: <span style="color:var(--gold);font-family:'Space Mono',monospace" id="vLot">-</span></span>
+      </div>
+
+      <!-- TA mini panel -->
+      <div class="ta-mini" id="taMini">
+        <div class="tm-title">Indikator Teknikal (dari NumPy/Pandas)</div>
+        <div class="tm-grid" id="tmGrid"></div>
+      </div>
+
+      <!-- Analysis from AI -->
+      <div class="analysis">
+        <div class="at">Analisis AI & Alasan Entry</div>
+        <div class="asumm" id="aSumm"></div>
+        <div class="apts" id="aPts"></div>
+        <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Konfirmasi Indikator</div>
+        <div class="ainds" id="aInds"></div>
+        <div class="mctx" id="mCtx" style="display:none"><strong>🌍 Market Context</strong><span id="mCtxTxt"></span></div>
+      </div>
+
+      <div class="act-row">
+        <button class="btn-s" onclick="copySignal()">📋 Copy</button>
+        <button class="btn-s" onclick="shareSignal()">📤 Share</button>
+        <button class="btn-s" onclick="fetchTA()">🔄 Refresh TA</button>
+        <button class="btn-new" onclick="newSignal()">⚡ SIGNAL BARU</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  ⚠️ DISCLAIMER: Signal AI untuk referensi edukasi saja. Trading forex/gold mengandung risiko tinggi.<br>
+  Selalu terapkan manajemen risiko. Hasil masa lalu tidak menjamin hasil masa depan.<br>
+  <span style="font-size:9.5px;color:var(--muted)">XAUUSD SIGNAL PRO v3.0 · Python + NumPy/Pandas TA Engine · 6 AI Providers · 2025</span>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:8765';
+let selAI=null, selTF='H1', eyeOn=false, lastSig=null, lastTA=null;
+
+const AI_CFG = {
+  gpt4:    {lbl:'OpenAI API Key',    link:'https://platform.openai.com/api-keys',  hint:'platform.openai.com', pfx:'sk-'},
+  claude:  {lbl:'Anthropic API Key', link:'https://console.anthropic.com',          hint:'console.anthropic.com', pfx:'sk-ant-'},
+  gemini:  {lbl:'Google AI API Key', link:'https://aistudio.google.com/app/apikey', hint:'aistudio.google.com', pfx:''},
+  deepseek:{lbl:'DeepSeek API Key',  link:'https://platform.deepseek.com',          hint:'platform.deepseek.com', pfx:'sk-'},
+  grok:    {lbl:'xAI API Key',       link:'https://console.x.ai',                   hint:'console.x.ai', pfx:'xai-'},
+  mistral: {lbl:'Mistral API Key',   link:'https://console.mistral.ai',             hint:'console.mistral.ai', pfx:''},
+};
+
+// ── Server health ─────────────────────────────────────────────────────────────
+async function checkServer() {
+  try {
+    const r = await fetch(API+'/health', {signal:AbortSignal.timeout(4000)});
+    if (r.ok) {
+      const d = await r.json();
+      setStatus(true, `Server OK · NumPy ${d.numpy ? '✓' : '✗'} · Cache: ${d.cache} entries`);
+      return true;
+    }
+  } catch(e){}
+  setStatus(false, 'Server offline — jalankan: python server.py');
+  return false;
+}
+function setStatus(ok, msg) {
+  document.getElementById('sd').className = 'sd '+(ok?'ok':'err');
+  document.getElementById('st').textContent = msg;
+}
+checkServer(); setInterval(checkServer, 12000);
+
+// ── Live price ────────────────────────────────────────────────────────────────
+async function fetchPrice() {
+  try {
+    const r = await fetch(API+'/api/price', {signal:AbortSignal.timeout(5000)});
+    if (!r.ok) return;
+    const d = await r.json();
+    const el = document.getElementById('priceNum');
+    const chg = document.getElementById('priceChg');
+    el.textContent = d.price.toFixed(2);
+    el.className = 'price-num '+(d.change>=0?'up':'down');
+    chg.textContent = `${d.change>=0?'+':''}${d.change.toFixed(2)} (${d.change_pct>=0?'+':''}${d.change_pct.toFixed(2)}%)`;
+    chg.className = 'price-chg '+(d.change>=0?'up':'down');
+    chg.style.display = 'block';
+  } catch(e) {
+    // server offline, keep last value or show placeholder
+  }
+}
+fetchPrice(); setInterval(fetchPrice, 8000);
+
+// ── Fetch & render TA dashboard ───────────────────────────────────────────────
+async function fetchTA(tf) {
+  tf = tf || selTF;
+  try {
+    const r = await fetch(`${API}/api/ta?tf=${tf}`, {signal:AbortSignal.timeout(20000)});
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.error) return;
+    lastTA = d;
+    renderTA(d);
+    document.getElementById('taCard').classList.add('show');
+  } catch(e) {}
+}
+
+function renderTA(d) {
+  // Bias
+  const isBull = d.bias === 'BUY';
+  const bb = document.getElementById('biasBadge');
+  bb.className = 'bias-badge '+(isBull?'bull':'bear');
+  document.getElementById('biasArrow').textContent = isBull ? '▲' : '▼';
+  document.getElementById('biasText').textContent = `${d.bias} BIAS — ${d.confidence_raw.toFixed(0)}% Confidence`;
+
+  const total = d.bull_signals.length + d.bear_signals.length || 1;
+  document.getElementById('bullCount').textContent = d.bull_signals.length;
+  document.getElementById('bearCount').textContent = d.bear_signals.length;
+  setTimeout(() => {
+    document.getElementById('bullBar').style.width = (d.bull_signals.length/total*100)+'%';
+    document.getElementById('bearBar').style.width = (d.bear_signals.length/total*100)+'%';
+  }, 100);
+
+  document.getElementById('taSource').textContent = `${d.tf} · ${d.candles} bars`;
+
+  // Indicators grid
+  const cells = [
+    {lbl:'RSI(14)',    val:d.rsi14.toFixed(2),    type: d.rsi14<40?'bull':d.rsi14>60?'bear':'neutral', note: d.rsi14<30?'Oversold':d.rsi14>70?'Overbought':'Normal'},
+    {lbl:'RSI(7)',     val:d.rsi7.toFixed(2),     type: d.rsi7<40?'bull':d.rsi7>60?'bear':'neutral',   note: ''},
+    {lbl:'MACD Hist',  val:d.macd_hist.toFixed(4), type: d.macd_hist>0?'bull':'bear', note: d.macd_hist>0?'Bullish momentum':'Bearish momentum'},
+    {lbl:'ADX',        val:d.adx.toFixed(1),       type: d.adx>25?'neutral':'neutral', note: d.adx>25?'Trending':'Ranging'},
+    {lbl:'+DI / -DI',  val:`${d.plus_di.toFixed(1)} / ${d.minus_di.toFixed(1)}`, type: d.plus_di>d.minus_di?'bull':'bear', note: d.plus_di>d.minus_di?'Bull dominant':'Bear dominant'},
+    {lbl:'Stoch K/D',  val:`${d.stoch_k.toFixed(0)}/${d.stoch_d.toFixed(0)}`,   type: d.stoch_k<30?'bull':d.stoch_k>70?'bear':'neutral', note: d.stoch_k<20?'Oversold':d.stoch_k>80?'Overbought':'Normal'},
+    {lbl:'CCI(20)',    val:d.cci.toFixed(1),       type: d.cci<-100?'bull':d.cci>100?'bear':'neutral', note: d.cci<-100?'Oversold':d.cci>100?'Overbought':''},
+    {lbl:'Williams%R', val:d.wpr.toFixed(1),       type: d.wpr<-80?'bull':d.wpr>-20?'bear':'neutral',  note: d.wpr<-80?'Oversold':d.wpr>-20?'Overbought':''},
+    {lbl:'BB %B',      val:d.bb_pct_b.toFixed(3),  type: d.bb_pct_b<0.2?'bull':d.bb_pct_b>0.8?'bear':'neutral', note: `BW: ${d.bb_bw.toFixed(2)}%`},
+    {lbl:'EMA 20/50',  val:`${d.ema20.toFixed(0)}/${d.ema50.toFixed(0)}`, type: d.price>d.ema20?'bull':'bear', note: d.price>d.ema50?'Bull':'Bear'},
+    {lbl:'EMA 200',    val:d.ema200.toFixed(2),    type: d.price>d.ema200?'bull':'bear', note: d.price>d.ema200?'Above (Bull)':'Below (Bear)'},
+    {lbl:'VWAP',       val:d.vwap.toFixed(2),      type: d.price>d.vwap?'bull':'bear',  note: d.price>d.vwap?'Above':'Below'},
+    {lbl:'ATR(14)',    val:d.atr.toFixed(3),       type: 'neutral', note: 'Volatilitas'},
+    {lbl:'Trend',      val:d.trend,                type: d.trend.includes('BULL')?'bull':d.trend.includes('BEAR')?'bear':'neutral', note: `Score ${d.trend_score}/5`},
+    {lbl:'Volume',     val:d.vol_label,            type: 'neutral', note: `${d.vol_ratio.toFixed(1)}x avg`},
+    {lbl:'Pattern',    val:d.candle_patterns[0]||'None', type:'neutral', note: d.rsi_div!='NONE'?`RSI Div: ${d.rsi_div}`:''},
+  ];
+
+  const grid = document.getElementById('indGrid');
+  grid.innerHTML = cells.map(c => `
+    <div class="ind-cell ${c.type}">
+      <div class="ic-lbl">${c.lbl}</div>
+      <div class="ic-val">${c.val}</div>
+      ${c.note ? `<div class="ic-note">${c.note}</div>` : ''}
+    </div>
+  `).join('');
+
+  // SR levels
+  const srItems = [
+    {lbl:'R2',    val:d.r2,    cls:'sr-r2'},
+    {lbl:'R1',    val:d.r1,    cls:'sr-r1'},
+    {lbl:'Pivot', val:d.pivot, cls:'sr-pivot'},
+    {lbl:'Price', val:d.price, cls:'sr-price'},
+    {lbl:'S1',    val:d.s1,    cls:'sr-s1'},
+    {lbl:'S2',    val:d.s2,    cls:'sr-s2'},
+  ].sort((a,b) => b.val-a.val);
+
+  document.getElementById('srRow').innerHTML = srItems.map(s => `
+    <div class="sr-cell">
+      <div class="sr-lbl ${s.cls}">${s.lbl}</div>
+      <div class="sr-val ${s.cls}">${s.val.toFixed(2)}</div>
+    </div>
+  `).join('');
+}
+
+// ── AI picker ─────────────────────────────────────────────────────────────────
+function pickAI(el) {
+  document.querySelectorAll('.ai-card').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  selAI = el.dataset.ai;
+  const cfg = AI_CFG[selAI];
+  document.getElementById('apiLbl').innerHTML = `🔑 ${cfg.lbl}`;
+  document.getElementById('apiInp').placeholder = `Paste ${cfg.lbl}...`;
+  document.getElementById('apiLink').href = cfg.link;
+  document.getElementById('apiLink').textContent = cfg.hint;
+  document.getElementById('apiInp').value = '';
+  document.getElementById('apiInp').className = 'api-inp';
+  document.getElementById('vMsg').textContent = '';
+  document.getElementById('cardAPI').classList.add('show');
+  step(1,'done'); step(2,'active'); step(3,'');
+  setTimeout(()=>document.getElementById('cardAPI').scrollIntoView({behavior:'smooth',block:'center'}),120);
+
+  // Auto-load TA when AI is selected
+  fetchTA(selTF);
+}
+
+function onKey() {
+  const v = document.getElementById('apiInp').value.trim();
+  const cfg = AI_CFG[selAI]; if(!cfg) return;
+  const ok = cfg.pfx ? v.startsWith(cfg.pfx)&&v.length>15 : v.length>15;
+  const inp = document.getElementById('apiInp');
+  const msg = document.getElementById('vMsg');
+  if(v.length>5) {
+    inp.className='api-inp '+(ok?'ok':'bad');
+    msg.className=ok?'vmsg vok':'vmsg vbad';
+    msg.textContent=ok?'✓ Format valid':'⚠ '+(cfg.pfx?`Harus dimulai "${cfg.pfx}..."`:'API Key terlalu pendek');
+    if(ok){step(2,'done');step(3,'active')}
+  }
+}
+function toggleEye(){eyeOn=!eyeOn;document.getElementById('apiInp').type=eyeOn?'text':'password'}
+
+// ── TF picker ─────────────────────────────────────────────────────────────────
+function pickTF(el) {
+  document.querySelectorAll('.tf').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active'); selTF = el.dataset.tf;
+  if(selAI) fetchTA(selTF); // refresh TA when TF changes
+}
+
+function step(n, state) {
+  const el = document.getElementById('s'+n);
+  el.className='step'+(state?' '+state:'');
+}
+
+// ── Generate ──────────────────────────────────────────────────────────────────
+async function generate() {
+  const key = document.getElementById('apiInp').value.trim();
+  if(!selAI){toast('Pilih AI Model terlebih dahulu!','err');return}
+  if(!key||key.length<10){toast('Masukkan API Key yang valid!','err');return}
+  if(!(await checkServer())){toast('Server Python tidak aktif!','err');return}
+
+  document.getElementById('sigOut').classList.remove('show');
+  document.getElementById('sigOut').style.display='none';
+  document.getElementById('loadCard').classList.add('show');
+  document.getElementById('lsub').textContent=`${selAI.toUpperCase()} · ${selTF} · ${document.getElementById('strategy').value}`;
+  document.getElementById('genBtn').disabled=true;
+  document.getElementById('loadCard').scrollIntoView({behavior:'smooth',block:'start'});
+
+  // Animate steps
+  const ids=['l1','l2','l3','l4','l5'];
+  let si=0;
+  ids.forEach(id=>{const e=document.getElementById(id);e.className='ls';e.querySelector('.ls-i').textContent='⏳'});
+  document.getElementById('l1').className='ls go';
+  const it = setInterval(()=>{
+    if(si<ids.length-1){
+      const e=document.getElementById(ids[si]);e.className='ls ok';e.querySelector('.ls-i').textContent='✅';
+      si++;document.getElementById(ids[si]).className='ls go';
+    }
+  },900);
+
+  try {
+    const resp = await fetch(API+'/api/signal',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        ai_id:selAI, api_key:key, timeframe:selTF,
+        strategy:document.getElementById('strategy').value,
+        mode:document.getElementById('mode').value,
+        rr_min:document.getElementById('rrMin').value,
+      })
+    });
+    clearInterval(it);
+    ids.forEach(id=>{const e=document.getElementById(id);e.className='ls ok';e.querySelector('.ls-i').textContent='✅'});
+    const data = await resp.json();
+    if(!resp.ok||data.error) throw new Error(data.error||`HTTP ${resp.status}`);
+    lastSig=data;
+    await new Promise(r=>setTimeout(r,350));
+    showSignal(data);
+  } catch(e) {
+    clearInterval(it);
+    document.getElementById('loadCard').classList.remove('show');
+    document.getElementById('genBtn').disabled=false;
+    toast('Error: '+e.message,'err');
+  }
+}
+
+// ── Render signal ─────────────────────────────────────────────────────────────
+function showSignal(d) {
+  document.getElementById('loadCard').classList.remove('show');
+  document.getElementById('genBtn').disabled=false;
+
+  const isBuy = (d.signal||'BUY').toUpperCase()==='BUY';
+  const pill = document.getElementById('sigPill');
+  pill.className=`sig-pill ${isBuy?'buy':'sell'}`;
+  document.getElementById('sigArr').textContent=isBuy?'▲':'▼';
+  document.getElementById('sigType').textContent=isBuy?'BUY':'SELL';
+
+  // Metas
+  document.getElementById('mAI').textContent=d.ai_name||selAI;
+  document.getElementById('mTF').textContent=d.timeframe||selTF;
+  document.getElementById('mMode').textContent=document.getElementById('mode').value;
+  document.getElementById('mTime').textContent=d.generated_at||'--:--';
+  document.getElementById('mCandles').textContent=`${d.candles||'-'} bars`;
+
+  // Levels
+  const entry=parseFloat(d.entry)||0, tp=parseFloat(d.tp)||0, sl=parseFloat(d.sl)||0;
+  document.getElementById('vE').textContent=entry.toFixed(2);
+  document.getElementById('vTP').textContent=tp?tp.toFixed(2):'-';
+  document.getElementById('vSL').textContent=sl?sl.toFixed(2):'-';
+  const tpPip=tp?Math.abs(tp-entry)*10:0, slPip=sl?Math.abs(entry-sl)*10:0;
+  document.getElementById('nTP').textContent=tpPip?`${isBuy?'+':'-'}${tpPip.toFixed(0)} pips`:'';
+  document.getElementById('nSL').textContent=slPip?`${isBuy?'-':'+'}${slPip.toFixed(0)} pips`:'';
+  document.getElementById('vRR').textContent=d.rr_ratio||'1:0';
+  const lots={micro:'0.01-0.05',mini:'0.10-0.50',standard:'1.0+'};
+  document.getElementById('vLot').textContent=lots[document.getElementById('lot').value];
+
+  // Confidence
+  const conf=parseInt(d.confidence)||70;
+  document.getElementById('cFill').style.width='0%';
+  document.getElementById('cPct').textContent='0%';
+  setTimeout(()=>{
+    document.getElementById('cFill').style.width=conf+'%';
+    animN(document.getElementById('cPct'),0,conf,1800,'%');
+  },200);
+
+  // TA mini
+  const td=d.ta_data;
+  if(td) {
+    const cells=[
+      {l:'RSI(14)',    v:td.rsi14.toFixed(2),       c: td.rsi14<50?'c-bull':'c-bear'},
+      {l:'MACD Hist',  v:td.macd_hist.toFixed(4),   c: td.macd_hist>0?'c-bull':'c-bear'},
+      {l:'ADX',        v:td.adx.toFixed(1),          c:'c-neutral'},
+      {l:'+DI / -DI',  v:`${td.plus_di?.toFixed(1)||'-'}/${td.minus_di?.toFixed(1)||'-'}`, c:td.plus_di>td.minus_di?'c-bull':'c-bear'},
+      {l:'Stoch K',    v:td.stoch_k.toFixed(0),      c: td.stoch_k<50?'c-bull':'c-bear'},
+      {l:'ATR(14)',    v:td.atr14.toFixed(3),        c:'c-neutral'},
+      {l:'EMA 20',     v:td.ema20.toFixed(2),        c: td.price>td.ema20?'c-bull':'c-bear'},
+      {l:'EMA 200',    v:td.ema200.toFixed(2),       c: td.price>td.ema200?'c-bull':'c-bear'},
+      {l:'VWAP',       v:td.vwap.toFixed(2),         c: td.price>td.vwap?'c-bull':'c-bear'},
+      {l:'BB Upper',   v:td.bb_upper.toFixed(2),     c:'c-neutral'},
+      {l:'BB Lower',   v:td.bb_lower.toFixed(2),     c:'c-neutral'},
+      {l:'R1 / S1',    v:`${td.r1?.toFixed(0)||'-'}/${td.s1?.toFixed(0)||'-'}`, c:'c-neutral'},
+      {l:'Trend',      v:td.trend,                   c:td.trend.includes('BULL')?'c-bull':td.trend.includes('BEAR')?'c-bear':'c-neutral'},
+      {l:'Bull Sigs',  v:td.bull_count,              c:'c-bull'},
+      {l:'Bear Sigs',  v:td.bear_count,              c:'c-bear'},
+    ];
+    document.getElementById('tmGrid').innerHTML=cells.map(c=>`
+      <div class="tmc">
+        <div class="tmc-l">${c.l}</div>
+        <div class="tmc-v ${c.c}">${c.v}</div>
+      </div>
+    `).join('');
+  }
+
+  // Analysis
+  document.getElementById('aSumm').textContent=d.summary||'';
+  const pts=document.getElementById('aPts');
+  pts.innerHTML='';
+  (d.reasons||[]).forEach(r=>{
+    const div=document.createElement('div');div.className='apt';
+    div.innerHTML=`<div class="adot"></div><div>${r}</div>`;
+    pts.appendChild(div);
+  });
+  const ainds=document.getElementById('aInds');
+  ainds.innerHTML='';
+  (d.indicators||[]).forEach(ind=>{
+    const s=document.createElement('span');
+    s.className=`ind ${ind.type||'neutral'}`;
+    s.textContent=ind.label; ainds.appendChild(s);
+  });
+  if(d.market_context){
+    document.getElementById('mCtx').style.display='block';
+    document.getElementById('mCtxTxt').textContent=d.market_context;
+  } else {
+    document.getElementById('mCtx').style.display='none';
+  }
+
+  document.getElementById('sigOut').style.display='block';
+  document.getElementById('sigOut').classList.add('show');
+  setTimeout(()=>document.getElementById('sigOut').scrollIntoView({behavior:'smooth',block:'start'}),100);
+  toast('✓ Signal berhasil digenerate!','ok');
+}
+
+function animN(el,from,to,dur,suf=''){
+  const s=Date.now();
+  const t=setInterval(()=>{
+    const p=Math.min((Date.now()-s)/dur,1);
+    el.textContent=Math.round(from+(to-from)*(1-Math.pow(1-p,3)))+suf;
+    if(p>=1) clearInterval(t);
+  },16);
+}
+
+// ── Copy / Share / New ────────────────────────────────────────────────────────
+function copySignal(){
+  if(!lastSig) return;
+  const d=lastSig, ta=d.ta_data||{};
+  const txt=`🥇 XAUUSD SIGNAL PRO
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+${d.signal==='BUY'?'📈 BUY / LONG':'📉 SELL / SHORT'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+📍 Entry  : ${d.entry}
+🎯 TP     : ${d.tp}
+🛡️ SL     : ${d.sl}
+📊 R:R    : ${d.rr_ratio}
+🎯 Conf   : ${d.confidence}%
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 INDIKATOR (NumPy/Pandas)
+RSI(14) : ${ta.rsi14||'-'}  | MACD Hist: ${ta.macd_hist||'-'}
+ADX     : ${ta.adx||'-'}    | ATR(14) : ${ta.atr14||'-'}
+EMA20   : ${ta.ema20||'-'}  | EMA200  : ${ta.ema200||'-'}
+Trend   : ${ta.trend||'-'}  | Bull/Bear: ${ta.bull_count||'-'}/${ta.bear_count||'-'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+⏱ TF    : ${d.timeframe}
+🤖 AI   : ${d.ai_name}
+🕐 Waktu : ${d.generated_at} ${d.generated_date}
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+📝 Alasan:
+${(d.reasons||[]).map((r,i)=>`${i+1}. ${r}`).join('\n')}
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ Risk management! Trade at your own risk.
+🐍 XAUUSD Signal Pro v3.0 (Python+NumPy)`.trim();
+
+  navigator.clipboard.writeText(txt)
+    .then(()=>toast('✓ Signal disalin ke clipboard!','ok'))
+    .catch(()=>{prompt('Salin teks ini:',txt)});
+}
+
+function shareSignal(){
+  if(!lastSig) return;
+  const d=lastSig;
+  const txt=`🥇 XAUUSD ${d.signal}! Entry:${d.entry} TP:${d.tp} SL:${d.sl} R:R:${d.rr_ratio} AI:${d.ai_name} TF:${d.timeframe}`;
+  if(navigator.share) navigator.share({title:'XAUUSD Signal',text:txt}).catch(()=>{});
+  else copySignal();
+}
+
+function newSignal(){
+  document.getElementById('sigOut').classList.remove('show');
+  document.getElementById('sigOut').style.display='none';
+  lastSig=null;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let toastT;
+function toast(msg,type='ok'){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='toast '+type;el.style.display='block';
+  clearTimeout(toastT);toastT=setTimeout(()=>el.style.display='none',4000);
+}
+
+// Auto-load TA on page load
+setTimeout(()=>fetchTA('H1'), 1500);
+</script>
+</body>
+</html>

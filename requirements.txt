@@ -1,4 +1,5 @@
 Flask
 yfinance
 pandas
+numpy
 requests
